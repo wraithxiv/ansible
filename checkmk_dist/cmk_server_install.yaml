@@ -1,0 +1,114 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: install updates (Ubuntu)
+    tags: always
+    apt:
+      upgrade: dist
+      update_cache: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: install updates (Rocky)
+    tags: always
+    dnf:
+      update_only: yes
+      update_cache: yes
+    when: ansible_distribution == "Rocky"
+
+- hosts: deb
+  become: true
+  become_method: sudo
+  become_user: "{{ ansible_user }}"
+  tasks:
+
+  - name: create destination directory
+    tags: deb,deb-folder
+    file:
+      path: "{{ dir }}"
+      state: directory
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: 0755
+
+  - name: copy cmk agent
+    tags: deb,deb-cpy-agnt
+    copy:
+      src: check-mk-agent_2.3.0p11-64fc246e1c0b8373_all.deb
+      dest: "{{ dir }}check-mk-agent_2.3.0p11-64fc246e1c0b8373_all.deb"
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: 0755
+
+  - name: install cmk agent
+    tags: deb,deb-agent
+    expect:
+      command: sudo dpkg -i "{{ dir }}"check-mk-agent_2.3.0p11-64fc246e1c0b8373_all.deb
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+  - name: copy register cmk agent tls script
+    tags: deb,deb-cpy-reg
+    copy:
+      src: agent_reg.sh
+      dest: "{{ dir }}agent_reg.sh"
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: 0755
+
+  - name: run register cmk agent tls script
+    tags: deb,deb-reg
+    expect:
+      #command: sudo cmk-agent-ctl register --server 192.168.1.12 --site main --hostname rocky --trust-cert --user cmkadmin --password {{ cmkadmin_pass }}
+      command: sudo "{{ dir }}agent_reg.sh"
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+- hosts: rpm
+  become: true
+  become_method: sudo
+  become_user: "{{ ansible_user }}"
+  tasks:
+
+  - name: create destination directory
+    tags: rpm,rpm-folder
+    file:
+      path: "{{ dir }}"
+      state: directory
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: 0755
+
+  - name: copy cmk agent
+    tags: rpm,rpm-cpy=agny
+    copy:
+      src: check-mk-agent-2.3.0p11-64fc246e1c0b8373.noarch.rpm
+      dest: "{{ dir }}check-mk-agent-2.3.0p11-64fc246e1c0b8373.noarch.rpm"
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: 0755
+
+  - name: install cmk agent
+    tags: rpm,rpm-agent
+    expect:
+      command: sudo dnf --nogpgcheck install "{{ dir }}"check-mk-agent-2.3.0p11-64fc246e1c0b8373.noarch.rpm -y
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+  - name: copy register cmk agent tls script
+    tags: rpm,rpm-cpy-reg
+    copy:
+      src: agent_reg.sh
+      dest: "{{ dir }}"
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: 0755
+
+  - name: run register cmk agent tls script
+    tags: rpm,rpm-reg
+    expect:
+      command: sudo "{{ dir }}"agent_reg.sh"
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"

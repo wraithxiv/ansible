@@ -1,0 +1,17 @@
+[deb:vars]
+ansible_user=wraith
+ansible_become_password="Kryptonian1"
+ansible_sudo_pass="Kryptonian1"
+dir="/home/{{ ansible_user }}/ansible_files/"
+
+[deb]
+192.168.1.6
+
+[rpm:vars]
+ansible_user=wraith
+ansible_become_pass="Kryptonian1"
+ansible_sudo_pass="Kryptonian1"
+dir="/home/{{ ansible_user }}/ansible_files/"
+
+[rpm]
+192.168.1.11

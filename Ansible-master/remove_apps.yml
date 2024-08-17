@@ -1,0 +1,29 @@
+---
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: remove apache2 package
+    apt:
+      name: 
+        - apache2
+        - neofetch
+      state: absent
+    when: ansible_distribution == "Ubuntu"
+
+  - name: remove apache2 package
+    dnf:
+      name: 
+      - httpd
+      - neofetch
+      state: absent
+    when: ansible_distribution == "Rocky"
+
+  - name: remove epel release repo
+    dnf:
+      name: 
+        - epel-release
+        - epel-next-release
+      state: absent
+    when: ansible_distribution == "Rocky"

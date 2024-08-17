@@ -1,0 +1,51 @@
+---
+
+- hosts: all
+  become: true
+  tasks:
+  
+  - name: install apps on ubuntu and update 
+    ansible.builtin.apt:
+      name: 
+        - apache2
+        - neofetch
+      state: latest
+      update_cache: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: start apache2 service
+    service:
+      name: apache2
+      state: started
+      enabled: true
+
+    when: ansible_distribution == "Ubuntu"
+
+  - name: install epel gpg key
+    rpm_key:
+      state: present
+      key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
+    when: ansible_distribution == "Rocky"  
+
+  - name: install epel repos
+    ansible.builtin.dnf:
+      name: 
+        - 'https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm'
+        - 'https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm'
+    when: ansible_distribution == "Rocky"  
+
+  - name: install apps on rocky
+    ansible.builtin.dnf:
+      name: 
+        - httpd
+        - neofetch
+      state: latest
+      update_cache: yes
+    when: ansible_distribution == "Rocky"
+
+  - name: start apache2 service
+    service:
+      name: httpd
+      state: started
+      enabled: true
+    when: ansible_distribution == "Rocky"

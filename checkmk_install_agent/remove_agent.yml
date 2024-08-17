@@ -1,0 +1,55 @@
+---
+
+- hosts: deb
+  become: true
+  become_user: "{{ ansible_user }}"
+  become_method: sudo 
+  tasks:
+
+  - name: unregister agent tls
+    tags: deb,deb-unreg
+    expect:
+      command: sudo cmk-agent-ctl delete-all --enable-insecure-connections
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+  - name: remove agent
+    tags: deb,deb-rem-agnt
+    expect:
+      command: sudo apt remove --purge check-mk-agent -y
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+  - name: remove folder
+    tags: deb,deb-rem-fldr
+    expect:
+      command: sudo rm -rf "{{ dir }}"
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+- hosts: rpm
+  become: true
+  become_user: "{{ ansible_user }}"
+  become_method: sudo
+  tasks:
+
+  - name: unregister agent tls
+    tags: rpm,deb-unreg
+    expect:
+      command: sudo cmk-agent-ctl delete-all --enable-insecure-connections
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+  - name: remove agent
+    tags: rpm,rpm-rem-agnt
+    expect:
+      command: sudo dnf remove check-mk-agent -y
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"
+
+  - name: remove folder
+    tags: rpm,rpm-rem-fldr
+    expect:
+      command: sudo rm -rf "{{ dir }}"
+      responses:
+        (?i)password: "{{ ansible_sudo_pass }}"

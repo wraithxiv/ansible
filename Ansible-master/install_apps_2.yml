@@ -1,0 +1,106 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: install updates (Ubuntu)
+    tags: always
+    apt:
+      upgrade: dist
+      update_cache: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: install updates (Rocky)
+    tags: always
+    dnf:
+      update_only: yes
+      update_cache: yes
+    when: ansible_distribution == "Rocky"
+
+- hosts: file_servers
+  become: yes
+  tasks:
+
+  - name: install apps on ubuntu and update
+    tags: ubuntu,apache,apache2
+    apt:
+      name: 
+        - apache2
+        - neofetch
+      state: latest
+    when: ansible_distribution == "Ubuntu"
+
+  - name: start apache2 service
+    tags: ubuntu,start,apache,apache2
+    service:
+      name: apache2
+      state: started
+      enabled: true
+    when: ansible_distribution == "Ubuntu"
+
+- hosts: game_servers
+  become: yes
+  tasks:
+
+  - name: install epel gpg key
+    tags: rocky,neofetch,repo,key
+    rpm_key:
+      state: present
+      key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
+    when: ansible_distribution == "Rocky"  
+
+  - name: install epel repos
+    tags: rocky,neofetch,repo
+    ansible.builtin.dnf:
+      name: 
+        - 'https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm'
+        - 'https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm'
+    when: ansible_distribution == "Rocky"  
+
+  - name: install apps on rocky
+    tags: rocky,apache,httpd
+    ansible.builtin.dnf:
+      name: 
+        - httpd
+        - neofetch
+      state: latest
+    when: ansible_distribution == "Rocky"
+
+  - name: start apache2 service
+    tags: rocky,start,apache,httpd
+    service:
+      name: httpd
+      state: started
+      enabled: true
+    when: ansible_distribution == "Rocky"
+
+  - name: copy cmk agent
+    tags: rocky,cmk,agent
+    copy:
+      src: check-mk-agent-2.3.0p11-64fc246e1c0b8373.noarch.rpm
+      dest: /root/ansible_files/check-mk-agent-2.3.0p11-64fc246e1c0b8373.noarch.rpm
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: install cmk agent
+    tags: rocky,cmk,agent,install
+    dnf:
+      disable_gpg_check: True
+      name: /root/ansible_files/check-mk-agent-2.3.0p11-64fc246e1c0b8373.noarch.rpm
+      state: present
+
+  - name: copy register cmk agent tls script
+    tags: rocky,cmk,register,tls
+    copy:
+      src: agent_reg.sh
+      dest: /root/ansible_files/agent_reg.sh
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: run register cmk agent tls script
+    tags: rocky,cmk,register,tls
+    command: sh /root/ansible_files/agent_reg.sh
+

@@ -1,0 +1,5 @@
+[file_servers]
+192.168.1.6 ansible_user=wraith
+
+[game_servers]
+192.168.1.11 ansible_user=root
